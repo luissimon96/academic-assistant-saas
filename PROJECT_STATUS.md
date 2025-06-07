@@ -146,30 +146,37 @@ cd backend && source venv/bin/activate && uvicorn main:app --reload
 
 ---
 
-## 🎯 **PRÓXIMOS 7 DIAS**
+## 🎯 **PRÓXIMOS 7 DIAS - REQUISITOS DE PRODUÇÃO**
 
-### **Prioridade Alta:**
+### **Prioridade CRÍTICA:**
 
-1. **Configurar Supabase** (1 dia)
-   - Criar projeto e schema de banco
-   - Implementar autenticação real
+1. **🔥 Stripe Integration** (2 dias)
+   - Setup conta Stripe Brasil
+   - Webhook implementation
+   - Payment flow completo
+   - Customer portal
 
-2. **Integrar LLMs** (2 dias)
-   - Groq API para plano gratuito
-   - Claude para planos pagos
+2. **🔥 Sentry + Analytics** (1 dia)
+   - Error tracking setup
+   - Google Analytics 4
+   - Custom events
+   - Performance monitoring
 
-3. **Deploy MVP** (2 dias)
-   - Frontend no Vercel
-   - Backend no Render
-   - Configurar domínio
+3. **⚙️ Remote Config System** (1 dia)
+   - Feature flags table
+   - Version management API
+   - Dynamic configuration
 
-4. **Testes finais** (1 dia)
-   - End-to-end testing
-   - Performance checks
+4. **🔄 Force Update System** (1 dia)
+   - Version check API
+   - Update modal
+   - Download URL management
 
-5. **Soft launch** (1 dia)
-   - Beta testing
-   - Feedback collection
+5. **🚀 Deploy + Monitoring** (2 dias)
+   - Production deploy
+   - Alert system setup
+   - Performance dashboards
+   - First paying customer validation
 
 ---
 

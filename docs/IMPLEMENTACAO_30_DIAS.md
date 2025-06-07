@@ -132,56 +132,66 @@ Cost ainda: R$ 0/mês
 
 ---
 
-### **SEMANA 3: POLIMENTO (Dias 15-21)**
+### **SEMANA 3: REQUISITOS DE PRODUÇÃO (Dias 15-21)**
 
-#### **Dia 15-16: UI/UX Polish**
+#### **Dia 15-16: Stripe Integration** 🔥 **PRIORITY**
 
 ```bash
-□ Dashboard melhorado
-□ Chat interface otimizada
-□ Mobile responsive
-□ Dark mode
-□ Loading states
+□ Stripe account setup Brasil
+□ Webhook implementation
+□ Subscription management
+□ Payment flow testing
+□ Customer portal
 
-Deliverable: UX profissional
+Deliverable: Sistema de pagamento Stripe
 ```
 
-#### **Dia 17-18: Advanced OCR**
+#### **Dia 17: Sentry + Analytics** 🔥 **PRIORITY**
+
+```bash
+□ Sentry error tracking setup
+□ Google Analytics 4 implementation
+□ Custom event tracking
+□ Error boundaries frontend
+□ Performance monitoring
+
+Deliverable: Monitoring e analytics ativos
+```
+
+#### **Dia 18: Remote Config System**
+
+```bash
+□ Supabase config table
+□ Feature flags system
+□ Version management API
+□ Admin panel básico
+□ Dynamic rate limits
+
+Deliverable: Configuração remota
+```
+
+#### **Dia 19-20: Advanced OCR + Testing**
 
 ```bash
 □ Google Vision API (1K free/mês)
-□ OCR fallback chain:
-  1. Tesseract (free)
-  2. Google Vision (1K free)
-  3. Azure OCR (5K free)
-□ Formula detection
-□ Text enhancement
-
-Deliverable: OCR enterprise-grade
-```
-
-#### **Dia 19-20: Analytics & SEO**
-
-```bash
-□ Vercel Analytics (free)
-□ Google Analytics 4
-□ SEO optimization
-□ Meta tags
-□ Sitemap
-
-Deliverable: Analytics e SEO setup
-```
-
-#### **Dia 21: Testing & QA**
-
-```bash
+□ OCR fallback chain melhorado
 □ End-to-end testing
 □ Payment flow testing
-□ Load testing (free tools)
 □ Security review
-□ Bug fixes
 
-Deliverable: Sistema testado
+Deliverable: Sistema testado e robusto
+```
+
+#### **Dia 21: Force Update System**
+
+```bash
+□ Version check API
+□ Update modal component
+□ Download URLs management
+□ Graceful degradation
+□ Analytics de versão
+
+Deliverable: Sistema de atualizações
 Cost: R$ 0/mês (ainda tudo gratuito)
 ```
 
