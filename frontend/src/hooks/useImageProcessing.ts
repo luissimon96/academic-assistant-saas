@@ -1,66 +1,85 @@
-'use client'
-
 import { useState, useCallback } from 'react'
-import { apiClient } from '@/lib/api'
-import { ProcessingResponse, ProcessingResult } from '../../../shared/types'
 
-interface UseImageProcessingResult {
-  processing: boolean
+interface ProcessingResult {
+  text: string
+  confidence: number
+  processing_time: number
+}
+
+interface UseImageProcessingReturn {
+  processImage: (file: File) => Promise<void>
+  isProcessing: boolean
   result: ProcessingResult | null
   error: string | null
-  processImage: (file: File, question?: string, subject?: string) => Promise<void>
   reset: () => void
 }
 
-export function useImageProcessing(): UseImageProcessingResult {
-  const [processing, setProcessing] = useState(false)
+export const useImageProcessing = (): UseImageProcessingReturn => {
+  const [isProcessing, setIsProcessing] = useState(false)
   const [result, setResult] = useState<ProcessingResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const processImage = useCallback(async (
-    file: File,
-    question?: string,
-    subject?: string
-  ) => {
+  const processImage = useCallback(async (file: File) => {
+    setIsProcessing(true)
+    setError(null)
+    setResult(null)
+
     try {
-      setProcessing(true)
-      setError(null)
-      setResult(null)
-
       // Convert file to base64
-      const imageData = await apiClient.fileToBase64(file)
-
-      // Send request
-      const response: ProcessingResponse = await apiClient.processImage({
-        image_data: imageData,
-        question,
-        subject
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Remove data:image/...;base64, prefix
+          const base64Data = result.split(',')[1]
+          resolve(base64Data)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
       })
 
-      if (response.success && response.result) {
-        setResult(response.result)
-      } else {
-        setError(response.message || 'Processing failed')
+      // Make API call
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || 'demo-token'}`
+        },
+        body: JSON.stringify({
+          image_data: base64
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Processing failed')
       }
 
+      if (data.success) {
+        setResult(data.data)
+      } else {
+        throw new Error(data.error || 'Processing failed')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      setError(errorMessage)
     } finally {
-      setProcessing(false)
+      setIsProcessing(false)
     }
   }, [])
 
   const reset = useCallback(() => {
-    setProcessing(false)
+    setIsProcessing(false)
     setResult(null)
     setError(null)
   }, [])
 
   return {
-    processing,
+    processImage,
+    isProcessing,
     result,
     error,
-    processImage,
     reset
   }
 } 

@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     port: int = 8000
     
     # Database Configuration (Supabase)
-    supabase_url: str
-    supabase_anon_key: str
-    supabase_service_role_key: str
-    database_url: str
+    supabase_url: str = "https://test.supabase.co"
+    supabase_anon_key: str = "test_anon_key"
+    supabase_service_role_key: str = "test_service_role_key"
+    database_url: str = "postgresql://test:test@localhost:5432/test"
     
     # OCR Services Configuration
     google_vision_api_key: Optional[str] = None
@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
-    groq_api_key: str  # Free tier para início
+    groq_api_key: str = "test_groq_key"  # Free tier para início
     
     # OpenRouter Configuration (Fallback)
     openrouter_api_key: Optional[str] = None
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     ]
     
     # Security
-    secret_key: str
+    secret_key: str = "test_secret_key_for_testing_only"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     

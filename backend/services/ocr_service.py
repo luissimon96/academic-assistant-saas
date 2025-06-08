@@ -26,8 +26,8 @@ try:
 except ImportError:
     AZURE_CV_AVAILABLE = False
 
-from ..models import OCRResult, OCRProvider
-from ..config import settings
+from models import OCRResult, OCRProvider
+from config import settings
 
 class OCRService:
     """
@@ -264,7 +264,7 @@ class OCRService:
                 image = image.convert('RGB')
             
             # Get available providers based on plan
-            from ..config import OCR_ROUTING
+            from config import OCR_ROUTING
             available_providers = OCR_ROUTING.get(plan, ['tesseract'])
             
             # Try providers in order of preference

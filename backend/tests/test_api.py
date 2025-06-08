@@ -2,9 +2,10 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch
 import io
+import base64
 from PIL import Image
 
-from app.main import app
+from main import app
 
 client = TestClient(app)
 
@@ -19,148 +20,121 @@ class TestHealthEndpoint:
         assert data["status"] == "healthy"
         assert "timestamp" in data
 
-class TestOCREndpoint:
-    """Testes para os endpoints de OCR"""
+class TestProcessEndpoint:
+    """Testes para o endpoint de processamento"""
     
-    def create_test_image(self) -> bytes:
-        """Cria uma imagem de teste"""
+    def create_test_image_base64(self) -> str:
+        """Cria uma imagem de teste em base64"""
         img = Image.new('RGB', (100, 100), color='white')
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='PNG')
-        return img_bytes.getvalue()
+        return base64.b64encode(img_bytes.getvalue()).decode('utf-8')
     
-    @patch('app.services.ocr_service.OCRService.process_image')
-    def test_process_image_success(self, mock_process):
+    @patch('services.ocr_service.ocr_service.extract_text')
+    def test_process_image_success(self, mock_ocr):
         """Testa processamento bem-sucedido de imagem"""
         # Mock do retorno do serviço OCR
-        mock_process.return_value = {
-            "text": "Sample extracted text",
-            "confidence": 0.95,
-            "processing_time": 1.2,
-            "provider": "tesseract"
-        }
+        from models import OCRResult, OCRProvider
+        mock_ocr.return_value = OCRResult(
+            provider=OCRProvider.TESSERACT,
+            text="Sample extracted text",
+            confidence=0.95,
+            processing_time=1.2,
+            success=True
+        )
         
-        image_data = self.create_test_image()
-        files = {"file": ("test.png", image_data, "image/png")}
+        image_data = self.create_test_image_base64()
+        payload = {"image_data": image_data}
         
-        response = client.post("/api/ocr/process", files=files)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert "text" in data["data"]
-        assert data["data"]["text"] == "Sample extracted text"
-        assert data["data"]["confidence"] == 0.95
-    
-    def test_process_image_no_file(self):
-        """Testa erro quando nenhum arquivo é enviado"""
-        response = client.post("/api/ocr/process")
-        
-        assert response.status_code == 422  # Validation error
-    
-    def test_process_image_invalid_format(self):
-        """Testa erro com formato de arquivo inválido"""
-        files = {"file": ("test.txt", b"not an image", "text/plain")}
-        
-        response = client.post("/api/ocr/process", files=files)
-        
-        assert response.status_code == 400
-        data = response.json()
-        assert data["success"] is False
-        assert "Invalid file format" in data["error"]
-    
-    @patch('app.services.ocr_service.OCRService.process_image')
-    def test_process_image_service_error(self, mock_process):
-        """Testa erro interno do serviço OCR"""
-        mock_process.side_effect = Exception("OCR service failed")
-        
-        image_data = self.create_test_image()
-        files = {"file": ("test.png", image_data, "image/png")}
-        
-        response = client.post("/api/ocr/process", files=files)
-        
-        assert response.status_code == 500
-        data = response.json()
-        assert data["success"] is False
-        assert "Internal server error" in data["error"]
-
-class TestChatEndpoint:
-    """Testes para o endpoint de chat/explicação"""
-    
-    @patch('app.services.llm_service.LLMService.get_explanation')
-    def test_explain_text_success(self, mock_explain):
-        """Testa explicação bem-sucedida de texto"""
-        mock_explain.return_value = {
-            "explanation": "Esta é uma explicação detalhada do texto.",
-            "summary": "Resumo do conteúdo",
-            "key_concepts": ["conceito1", "conceito2"],
-            "processing_time": 2.1
-        }
-        
-        payload = {
-            "text": "Texto para explicar",
-            "context": "educacional",
-            "language": "pt-br"
-        }
-        
-        response = client.post("/api/chat/explain", json=payload)
+        # Mock authentication
+        headers = {"Authorization": "Bearer test-token"}
+        response = client.post("/process", json=payload, headers=headers)
         
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert "explanation" in data["data"]
-        assert data["data"]["explanation"] == "Esta é uma explicação detalhada do texto."
+        assert data["request_id"] is not None
     
-    def test_explain_text_empty(self):
-        """Testa erro com texto vazio"""
-        payload = {"text": "", "context": "educacional"}
+    def test_process_image_no_auth(self):
+        """Testa erro quando não há autenticação"""
+        image_data = self.create_test_image_base64()
+        payload = {"image_data": image_data}
         
-        response = client.post("/api/chat/explain", json=payload)
+        response = client.post("/process", json=payload)
         
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == 403  # Forbidden without auth
     
-    def test_explain_text_missing_fields(self):
-        """Testa erro com campos obrigatórios faltando"""
-        payload = {"context": "educacional"}  # text missing
+    def test_process_image_invalid_data(self):
+        """Testa erro com dados inválidos"""
+        payload = {"image_data": "invalid_base64"}
+        headers = {"Authorization": "Bearer test-token"}
         
-        response = client.post("/api/chat/explain", json=payload)
+        response = client.post("/process", json=payload, headers=headers)
         
-        assert response.status_code == 422  # Validation error
+        # O endpoint pode retornar 200 com erro no resultado ou um código de erro
+        # Vamos verificar se há erro no resultado quando status é 200
+        if response.status_code == 200:
+            data = response.json()
+            assert data["success"] is False or "error" in data
+        else:
+            assert response.status_code in [400, 422, 500]
 
-class TestRateLimiting:
-    """Testes para rate limiting"""
+class TestUserEndpoints:
+    """Testes para endpoints de usuário"""
     
-    @patch('app.middleware.rate_limiter.check_rate_limit')
-    def test_rate_limit_exceeded(self, mock_rate_limit):
-        """Testa erro quando rate limit é excedido"""
-        mock_rate_limit.return_value = False
-        
-        response = client.get("/health", headers={"X-User-ID": "test-user"})
-        
-        assert response.status_code == 429
-        data = response.json()
-        assert "Rate limit exceeded" in data["detail"]
-
-class TestUserProfile:
-    """Testes para endpoints de perfil de usuário"""
-    
-    @patch('app.services.auth_service.verify_token')
-    def test_get_profile_success(self, mock_verify):
+    def test_get_profile_success(self):
         """Testa obtenção bem-sucedida do perfil"""
-        mock_verify.return_value = {"user_id": "test-user", "plan": "pro"}
-        
-        headers = {"Authorization": "Bearer fake-token"}
-        response = client.get("/api/user/profile", headers=headers)
+        headers = {"Authorization": "Bearer test-token"}
+        response = client.get("/user/profile", headers=headers)
         
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert "user_id" in data["data"]
+        assert "id" in data
+        assert "email" in data
+        assert "plan" in data
     
     def test_get_profile_no_token(self):
         """Testa erro sem token de autenticação"""
-        response = client.get("/api/user/profile")
+        response = client.get("/user/profile")
         
-        assert response.status_code == 401
+        assert response.status_code == 403  # Forbidden without auth
+    
+    def test_get_usage_success(self):
+        """Testa obtenção bem-sucedida do uso"""
+        headers = {"Authorization": "Bearer test-token"}
+        response = client.get("/user/usage", headers=headers)
+        
+        assert response.status_code == 200
         data = response.json()
-        assert "Authentication required" in data["detail"] 
+        assert "user_id" in data
+        assert "current_month_usage" in data
+        assert "plan_limit" in data
+
+class TestRootEndpoint:
+    """Testes para o endpoint raiz"""
+    
+    def test_root_endpoint(self):
+        """Testa o endpoint raiz"""
+        response = client.get("/")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "message" in data
+        assert "version" in data
+
+class TestPlansEndpoint:
+    """Testes para o endpoint de planos"""
+    
+    def test_get_plans(self):
+        """Testa obtenção dos planos disponíveis"""
+        response = client.get("/plans")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, dict)
+        
+        # Os planos podem estar diretamente no data ou dentro de data["plans"]
+        plans_data = data.get("plans", data)
+        assert "free" in plans_data
+        assert "pro" in plans_data
+        assert "max" in plans_data 

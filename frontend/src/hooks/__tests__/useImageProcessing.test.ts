@@ -2,7 +2,8 @@ import { renderHook, act } from '@testing-library/react'
 import { useImageProcessing } from '../useImageProcessing'
 
 // Mock do fetch
-global.fetch = jest.fn()
+const mockFetch = jest.fn()
+global.fetch = mockFetch
 
 describe('useImageProcessing', () => {
   beforeEach(() => {
@@ -27,10 +28,10 @@ describe('useImageProcessing', () => {
       }
     }
 
-      ; (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse
-      })
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse
+    })
 
     const { result } = renderHook(() => useImageProcessing())
     const mockFile = new File(['image content'], 'test.png', { type: 'image/png' })
@@ -47,10 +48,10 @@ describe('useImageProcessing', () => {
   it('should handle processing errors', async () => {
     const mockError = { error: 'Processing failed' }
 
-      ; (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        json: async () => mockError
-      })
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => mockError
+    })
 
     const { result } = renderHook(() => useImageProcessing())
     const mockFile = new File(['image content'], 'test.png', { type: 'image/png' })
@@ -65,7 +66,7 @@ describe('useImageProcessing', () => {
   })
 
   it('should handle network errors', async () => {
-    ; (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'))
+    mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
     const { result } = renderHook(() => useImageProcessing())
     const mockFile = new File(['image content'], 'test.png', { type: 'image/png' })
@@ -82,7 +83,6 @@ describe('useImageProcessing', () => {
   it('should reset state when called', () => {
     const { result } = renderHook(() => useImageProcessing())
 
-    // Set some state
     act(() => {
       result.current.reset()
     })
